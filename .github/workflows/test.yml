@@ -28,3 +28,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y nftables iproute2 python3
       - name: Real TCP UDP IPv4 IPv6 quota isolation
         run: sudo unshare --net python3 tests/linux_netfilter.py
+  installation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: One-click installation with official Snell V5 and systemd
+        run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT bash tests/systemd_smoke.sh

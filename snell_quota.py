@@ -425,6 +425,9 @@ def mutate(args):
                 event(db, 'telegram-test:' + str(int(time.time())), 'TEST Snell quota notifications configured')
                 atomic(STATE / 'ledger.json', db)
     finally:
+        # Intentional CLI edits may restart the controller several times quickly.
+        # Reset only here; automatic crash restarts retain systemd's rate limit.
+        run('systemctl', 'reset-failed', UNIT)
         run('systemctl', 'start', UNIT)
 
 

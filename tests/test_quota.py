@@ -113,6 +113,25 @@ class LedgerTests(unittest.TestCase):
 
 
 class RulesAndNotifyTests(unittest.TestCase):
+    def test_quiesce_drains_before_parent_stop(self):
+        results = [types.SimpleNamespace(returncode=0, stdout=''),
+                   types.SimpleNamespace(returncode=0, stdout='active\nrunning\n'),
+                   types.SimpleNamespace(returncode=0, stdout='inactive\ndead\n'),
+                   types.SimpleNamespace(returncode=0, stdout='')]
+        with patch.object(q, 'run', side_effect=results) as command, patch.object(q.time, 'sleep'):
+            q.stop_controller()
+            calls = command.call_args_list
+            self.assertEqual(calls[0].args[1], 'kill')
+            self.assertEqual(calls[-1].args[1], 'stop')
+
+    def test_quiesce_cancels_pending_auto_restart(self):
+        results = [types.SimpleNamespace(returncode=1, stdout=''),
+                   types.SimpleNamespace(returncode=0, stdout='activating\nauto-restart\n'),
+                   types.SimpleNamespace(returncode=0, stdout='')]
+        with patch.object(q, 'run', side_effect=results) as command:
+            q.stop_controller()
+            self.assertEqual(command.call_args_list[-1].args[1], 'stop')
+
     def test_rules_scope_and_shared_quota(self):
         rules = q.rules(dict(name='alice', port=21001), 1000, 1900000000, 995)
         self.assertEqual(rules.count('quota name "budget_test"'), 4)

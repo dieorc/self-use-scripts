@@ -159,6 +159,20 @@ def service(name, action, check=True):
     return run('systemctl', action, f'psmq-snell@{name}.service', check=check)
 
 
+def stop_controller():
+    # Let the controller drain child start jobs while its own unit stays active.
+    # Stopping the parent transaction first can race BindsTo child activation.
+    run('systemctl', 'kill', '--kill-whom=main', '--signal=SIGTERM', UNIT, check=False)
+    deadline = time.monotonic() + 90
+    while time.monotonic() < deadline:
+        state = run('systemctl', 'show', '--property=ActiveState,SubState', '--value', UNIT).stdout.split()
+        if any(x in state for x in ('inactive', 'failed', 'auto-restart')):
+            run('systemctl', 'stop', UNIT)
+            return
+        time.sleep(.2)
+    raise RuntimeError('controller did not finish draining; no configuration changes made')
+
+
 def stop_all(users):
     if users:
         # One transaction, including when a corrupt state prevents per-user recovery.
@@ -268,6 +282,8 @@ def daemon():
         while not stopping[0]:
             now = dt.datetime.now(UTC)
             for u in users:
+                if stopping[0]:
+                    break
                 name = u['name']
                 old_cycle = db['users'].get(name, {}).get('cycle')
                 s, end = roll(db, u, now)
@@ -310,7 +326,7 @@ def daemon():
                 if total >= u['quota'] * u['warn'] / 100 and not s['warned']:
                     event(db, f'{name}:{s["cycle"]}:warning', f'WARNING {name}: {total}/{u["quota"]} bytes ({u["warn"]}%)')
                     s['warned'] = True
-                if total < u['quota'] and u.get('enabled', True):
+                if total < u['quota'] and u.get('enabled', True) and not stopping[0]:
                     if service(name, 'is-active', check=False).returncode:
                         if name in started:
                             event(db, f'{name}:{s["cycle"]}:inactive', f'ANOMALY {name}: instance inactive; attempting start')
@@ -319,7 +335,8 @@ def daemon():
             atomic(STATE / 'ledger.json', db)
             notify(db)
             atomic(STATE / 'ledger.json', db)
-            time.sleep(1)
+            if not stopping[0]:
+                time.sleep(1)
         clean = True
     except Exception as e:
         # Sanitize exceptions: no subprocess output, URLs, PSKs, or tokens.
@@ -329,6 +346,8 @@ def daemon():
         stop_all(users)
         if clean:
             for u in users:
+                if u['name'] not in initialized:
+                    continue
                 s = db['users'][u['name']]
                 s['booked'] = s['base'] + min(s['lease'], quota_used(u['name'], s['generation']))
                 s['base'], s['lease'] = s['booked'], 0
@@ -352,7 +371,7 @@ def validate_user(name, port, day, zone, warn):
 
 def mutate(args):
     # Deliberately stop all instances before changing credentials/accounting settings.
-    run('systemctl', 'stop', UNIT)
+    stop_controller()
     try:
         with locked():
             cfg = read(ROOT / 'users.json')
@@ -435,6 +454,7 @@ def main():
     export.add_argument('name')
     export.add_argument('--server', required=True)
     sub.add_parser('daemon')
+    sub.add_parser('quiesce', help='drain and stop the controller before maintenance')
     a = p.parse_args()
     if os.geteuid() != 0:
         p.error('run as root')
@@ -445,6 +465,8 @@ def main():
     elif a.command == 'daemon':
         with locked():
             daemon()
+    elif a.command == 'quiesce':
+        stop_controller()
     elif a.command == 'export':
         u = next(u for u in read(ROOT / 'users.json')['users'] if u['name'] == a.name)
         if not re.fullmatch(r'[A-Za-z0-9.:[\]-]+', a.server):

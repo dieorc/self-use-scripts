@@ -22,7 +22,7 @@ version=$("$core" --v 2>&1 || true)
 [[ "$version" =~ v5\.[0-9]+\.[0-9]+ ]] || { echo 'Expected an official V5 binary; refusing other versions' >&2; exit 1; }
 # Stop before upgrades, preserving the current ledger and settling live counters.
 if systemctl cat psm-snell-quota.service >/dev/null 2>&1; then
-    systemctl stop psm-snell-quota.service
+    python3 snell_quota.py quiesce
 fi
 getent group snellquota >/dev/null || groupadd --system snellquota
 getent passwd snellquota >/dev/null || useradd --system --gid snellquota --no-create-home --shell /usr/sbin/nologin snellquota

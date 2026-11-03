@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run from a complete authenticated Git checkout of this private repository.
+# Run from the complete project, or use bootstrap.sh as the curl entry point.
 set -euo pipefail
 umask 077
 [[ $EUID == 0 ]] || { echo '请以 root 运行：sudo bash oneclick.sh' >&2; exit 1; }

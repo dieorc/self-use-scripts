@@ -1,6 +1,6 @@
 # 仓库维护
 
-仓库：`dieorc/self-use-scripts`，保持私有。主要入口为 `oneclick.sh`，安装后输入 `psm-snell` 打开中文管理菜单。
+仓库：`dieorc/self-use-scripts`，可见性由所有者在 GitHub 设置中管理。公开部署使用独立的 `bootstrap.sh` curl 入口；本地完整目录使用 `oneclick.sh`。安装后输入 `psm-snell` 打开中文管理菜单。
 
 首次发布保留 GitHub 初始化提交，在其后追加源码提交，不强制改写远端历史。账号授权通过 GitHub 连接器完成，不在聊天或源代码中提供 token。
 

@@ -4,9 +4,19 @@
 
 已提供实际 Python CLI、中文菜单、一键安装入口、systemd 服务、测试及可选 PSM 入口补丁。已在 GitHub Actions 的 Ubuntu 24.04 上通过 Python 3.9/3.12/3.14 逻辑测试、真实 nftables 计量隔离测试，以及官方 Snell V5 安装和 systemd 生命周期检查。真实 Surge 客户端（尤其 QUIC）、VPS 实际网络及 Telegram 投递仍按本文做端到端验收。
 
-## 一键安装与中文菜单（v0.2.1）
+## 一键安装与中文菜单（v0.2.2）
 
-完整仓库到 VPS 后，以 root 运行：
+仓库设为 **Public（公开）** 后，在 Debian/Ubuntu VPS 上以 root 执行这一条命令，无需 Git 或 GitHub 登录：
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/dieorc/self-use-scripts/main/bootstrap.sh)
+```
+
+`bootstrap.sh` 是独立入口：下载完整项目 ZIP，检查路径、文件类型和 SHA256 清单，再调用安装器。归档校验用于发现损坏和遗漏，不是发布者签名。它不会下载或使用 GitHub token。安装后输入 `psm-snell` 打开中文菜单。首次使用需自行添加用户，并放行对应的 TCP/UDP 端口。
+
+如需仅下载并校验，可给入口传入 `--verify-only`；仍可能准备 Python/curl 等依赖，但不安装或启动代理服务。`PSMQ_REF` 可指定分支或提交，以固定所安装的源码版本。
+
+完整仓库已下载到 VPS 时，也可直接以 root 运行：
 
 ```bash
 bash oneclick.sh
@@ -17,13 +27,13 @@ psm-snell
 
 不带参数的 `psm-snell` 打开中文管理菜单；带子命令时仍为原 Python CLI，systemd 启动方式兼容。菜单覆盖添加、查看额度、导出、修改额度、暂停/恢复/删除、Telegram、日志和重启。修改配置仍会正常结算并短暂断开受管连接。
 
-本仓库保持私有，因此需要 VPS 具有该仓库的只读访问权限，不能匿名使用公开仓库式 `curl raw.githubusercontent.com/...`。已有 GitHub SSH 认证的 root 账户可在仓库发布后使用：
+仓库的可见性由所有者在 GitHub 设置中管理。**如果仍为 Private（私有），上面的匿名 curl 命令会返回 404**；公开源码后即可使用。代码仓库只保存脚本和文档，真实 PSK、Telegram token/chat_id、流量账本只在 VPS 本地保存。保留私有时，可用已有 GitHub SSH 认证的 root 账户克隆：
 
 ```bash
 git clone git@github.com:dieorc/self-use-scripts.git /root/self-use-scripts && bash /root/self-use-scripts/oneclick.sh
 ```
 
-或先用 GitHub CLI 登录并克隆，再运行本地入口。不要将 GitHub token 嵌入 URL、命令行或此仓库。后续更新使用 `git pull --ff-only` 后重新执行 `oneclick.sh`，已有用户和账本保留。
+或先用 GitHub CLI 登录并克隆，再运行本地入口。不要将 GitHub token 嵌入 URL、命令行或此仓库。公开部署时可重新运行同一 curl 命令更新；Git 部署可用 `git pull --ff-only` 后重新执行 `oneclick.sh`，已有用户和账本保留。
 
 仓库附 GitHub Actions：Python 3.9/3.12/3.14 逻辑测试，以及 Ubuntu 24.04 上真实 nftables 网络隔离测试。还包含官方 V5 下载、双实例监听和暂停/恢复/升级的临时机安装测试。已通过的运行记录见 TEST-REPORT.md；这些检查仍未替代真实 Surge 客户端与 Telegram 投递验收。
 

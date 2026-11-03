@@ -15,6 +15,8 @@
 | Telegram 真实投递 | 本次未执行，无用户 bot 凭据 | 已验证模拟成功/失败/重试与敏感信息脱敏，真实权限与网络需部署后测试 |
 | GitHub Actions | 已推送私有仓库并实际运行成功 | 逻辑矩阵、内核计量隔离、官方 V5 安装三个 job 类别均成功 |
 
+v0.2.2 新增独立 `bootstrap.sh`：本地 40 项测试通过（原 32 项 + 8 项归档完整性/路径/类型/大小检查）。CI 安装任务使用完整 Git 归档调用同一个 bootstrap 入口，再验证官方 V5 与服务管理。匿名 GitHub 下载端需要仓库公开后额外核验；新增入口的 CI 结果可在仓库最新 Actions 中查看。
+
 逻辑测试环境：Windows、Python 3.14.5；仅为测试在项目 `work/test-deps` 安装 tzdata 2026.6，通过 PYTHONPATH 使用。部署 Linux 使用系统 tzdata，无需这个本地测试目录。
 
 通过记录：[GitHub Actions #6](https://github.com/dieorc/self-use-scripts/actions/runs/41598050851)，代码提交 `54092894af1e9f8504a3f5349311c83b34b74e48`。该记录验证完整安装与服务生命周期；后续菜单重启入口复核可在仓库 Actions 查看。

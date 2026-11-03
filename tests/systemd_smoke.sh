@@ -18,7 +18,11 @@ cleanup() {
 }
 trap cleanup EXIT
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
-bash oneclick.sh
+if [[ -n "${PSMQ_TEST_ARCHIVE:-}" ]]; then
+    bash bootstrap.sh --archive "$PSMQ_TEST_ARCHIVE"
+else
+    bash oneclick.sh
+fi
 psm-snell add smoke_a --port 21001 --quota 2M --day 18 --tz Asia/Shanghai --lease 512K
 psm-snell add smoke_b --port 21002 --quota 10M --day 31 --tz Europe/Berlin --lease 512K
 for attempt in {1..15}; do

@@ -19,7 +19,7 @@ jobs:
       - name: Calendar, controller and notification tests
         run: python -m unittest discover -s tests -v
       - name: Shell syntax
-        run: for script in install.sh oneclick.sh manage.sh psm-snell; do bash -n "$script"; done
+        run: for script in bootstrap.sh install.sh oneclick.sh manage.sh psm-snell tests/systemd_smoke.sh; do bash -n "$script"; done
   netfilter:
     runs-on: ubuntu-24.04
     steps:
@@ -33,5 +33,7 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-      - name: One-click installation with official Snell V5 and systemd
-        run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT bash tests/systemd_smoke.sh
+      - name: Prepare complete source archive
+        run: git archive --format=zip --prefix=self-use-scripts-ci/ -o "$RUNNER_TEMP/psmq-source.zip" HEAD
+      - name: Standalone bootstrap with official Snell V5 and systemd
+        run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT env PSMQ_TEST_ARCHIVE="$RUNNER_TEMP/psmq-source.zip" bash tests/systemd_smoke.sh

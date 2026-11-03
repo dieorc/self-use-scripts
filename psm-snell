@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if (( $# == 0 )); then
+    exec bash /usr/local/lib/psm-snell-quota/manage.sh
+fi
+exec python3 /usr/local/lib/psm-snell-quota/snell_quota.py "$@"

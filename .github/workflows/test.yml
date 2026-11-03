@@ -1,0 +1,30 @@
+name: Validate Snell quota scripts
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  logic:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ['3.9', '3.12', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Calendar, controller and notification tests
+        run: python -m unittest discover -s tests -v
+      - name: Shell syntax
+        run: for script in install.sh oneclick.sh manage.sh psm-snell; do bash -n "$script"; done
+  netfilter:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux test tools
+        run: sudo apt-get update && sudo apt-get install -y nftables iproute2 python3
+      - name: Real TCP UDP IPv4 IPv6 quota isolation
+        run: sudo unshare --net python3 tests/linux_netfilter.py

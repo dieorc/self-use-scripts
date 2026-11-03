@@ -1,0 +1,10 @@
+PSM Snell V5 quota extension
+Created 2026-11-03. Distributed under AGPL-3.0-or-later; see LICENSE.
+
+Optional manager.sh patch targets jinqians/proxy-stack (AGPL-3.0), commit
+d9a6c61121956996959b09176f02df627af1fe4b.
+Upstream: https://github.com/jinqians/proxy-stack
+
+The independent controller, installer and tests are supplied in source form.
+No official Snell executable is included. Official Snell is proprietary and
+remains subject to its publisher's terms. No affiliation or endorsement claimed.

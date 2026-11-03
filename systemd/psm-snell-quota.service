@@ -1,0 +1,20 @@
+[Unit]
+Description=PSM Snell V5 quota controller
+After=network-online.target nftables.service
+Wants=network-online.target
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/psm-snell daemon
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=90
+UMask=0077
+# Controller needs root for nft/systemd and the durable ledger.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

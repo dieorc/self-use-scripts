@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+*.zip
+*.tgz
+*.conf
+telegram.json
+users.json
+ledger.json
+emergency.json
+*.pem
+*.key
+.env

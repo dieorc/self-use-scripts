@@ -1,0 +1,13 @@
+--- a/manager.sh
++++ b/manager.sh
+@@ -12,6 +12,10 @@
+ # These commands run before the interactive root check and automatic updater.
+ # Read-only automation must not unexpectedly mutate the checked-out program.
+ case "${1:-}" in
++    snell-quota)
++        shift
++        exec /usr/local/bin/psm-snell "$@"
++        ;;
+     doctor)
+         shift
+         source "$LIB_DIR/doctor.sh"

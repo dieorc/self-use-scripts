@@ -427,7 +427,7 @@ def mutate(args):
     finally:
         # Intentional CLI edits may restart the controller several times quickly.
         # Reset only here; automatic crash restarts retain systemd's rate limit.
-        run('systemctl', 'reset-failed', UNIT)
+        run('systemctl', 'reset-failed', UNIT, check=False)
         run('systemctl', 'start', UNIT)
 
 

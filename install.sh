@@ -46,6 +46,6 @@ fi
 chmod 600 /etc/psm-snell-quota/users.json /var/lib/psm-snell-quota/ledger.json
 sha256sum /usr/local/lib/psm-snell-quota/snell-server > /var/lib/psm-snell-quota/core.sha256
 systemctl daemon-reload
-systemctl reset-failed psm-snell-quota.service
+systemctl reset-failed psm-snell-quota.service >/dev/null 2>&1 || true
 systemctl enable --now psm-snell-quota.service
 echo 'Installed. Next: psm-snell add alice --port 21001 --quota 100G --day 18 --tz Asia/Shanghai'

@@ -2,9 +2,9 @@
 
 自用脚本：PSM Snell V5 独立用户额度扩展
 
-已提供实际 Python CLI、中文菜单、一键安装入口、systemd 服务、测试及可选 PSM 入口补丁。本包定位为待 Linux 实机验收的实现版本：本次完成了 Windows 上的逻辑测试，Linux nftables 与官方 Snell/Surge 端到端测试需要在 VPS 上按本文执行。
+已提供实际 Python CLI、中文菜单、一键安装入口、systemd 服务、测试及可选 PSM 入口补丁。已在 GitHub Actions 的 Ubuntu 24.04 上通过 Python 3.9/3.12/3.14 逻辑测试、真实 nftables 计量隔离测试，以及官方 Snell V5 安装和 systemd 生命周期检查。真实 Surge 客户端（尤其 QUIC）、VPS 实际网络及 Telegram 投递仍按本文做端到端验收。
 
-## 一键安装与中文菜单（v0.2.0）
+## 一键安装与中文菜单（v0.2.1）
 
 完整仓库到 VPS 后，以 root 运行：
 
@@ -25,7 +25,7 @@ git clone git@github.com:dieorc/self-use-scripts.git /root/self-use-scripts && b
 
 或先用 GitHub CLI 登录并克隆，再运行本地入口。不要将 GitHub token 嵌入 URL、命令行或此仓库。后续更新使用 `git pull --ff-only` 后重新执行 `oneclick.sh`，已有用户和账本保留。
 
-仓库附 GitHub Actions：Python 3.9/3.12/3.14 逻辑测试，以及 Ubuntu 24.04 上真实 nftables 网络隔离测试。只有 Actions 实际通过后，才可把相应 Linux 计量检查标为已验证；它仍未替代官方 Snell/Surge 端到端验收。
+仓库附 GitHub Actions：Python 3.9/3.12/3.14 逻辑测试，以及 Ubuntu 24.04 上真实 nftables 网络隔离测试。还包含官方 V5 下载、双实例监听和暂停/恢复/升级的临时机安装测试。已通过的运行记录见 TEST-REPORT.md；这些检查仍未替代真实 Surge 客户端与 Telegram 投递验收。
 
 ## 1. 上游检查与实现依据
 
@@ -135,7 +135,7 @@ psm-snell delete bob
 
 创建后账期日/时区固定，避免更改账期意外赠送额度。本版本的 `update` 仅修改额度、提醒阈值和预留段大小，保留已用流量。若确需改账期，安排在旧账期结算后停用并迁移到新账户，旧账本保留。删除再以相同名字添加会保留同账期使用量，不用于清零。
 
-配置变更命令会先正常停止控制器与所有受管实例、完成结算，再更改配置并恢复；现有连接会中断。日常查询与导出不会中断连接。CLI 管理操作使用独立互斥锁串行执行。添加前检查 TCP/UDP 端口监听冲突，之后不要把同端口分配给其他应用。
+配置变更命令会先通知控制器收尾，等待已发起的服务操作完成、停止实例并结算，再更改配置并恢复；现有连接会中断。维护时可用 `psm-snell quiesce` 安全停止，或用 `psm-snell restart` 完成结算后重启。正常管理操作会清理启动次数计数；无人值守的故障重启仍保留 systemd 速率保护。日常查询与导出不会中断连接。CLI 管理操作使用独立互斥锁串行执行。添加前检查 TCP/UDP 端口监听冲突，之后不要把同端口分配给其他应用。
 
 在云安全组与主机防火墙放行各自的 TCP 和 UDP 端口。例如已有 UFW 的主机可以：
 
@@ -187,7 +187,7 @@ psm snell-quota add charlie --port 21003 --quota 20G --day 18 --tz Asia/Shanghai
 
 ```bash
 python3 -m unittest discover -s tests -v
-bash -n install.sh
+for script in install.sh oneclick.sh manage.sh psm-snell tests/systemd_smoke.sh; do bash -n "$script"; done
 ```
 
 真实内核测试必须在 Linux root 下运行（建议先用测试 VPS）：
@@ -228,7 +228,7 @@ nft -j list table inet psmq_alice
 备份前正常停止控制器，整套保存两个目录与专用 core 哈希；备份含凭据，保持 root-only 权限：
 
 ```bash
-systemctl stop psm-snell-quota
+psm-snell quiesce
 tar -czf /root/psm-snell-quota-backup.tgz /etc/psm-snell-quota /var/lib/psm-snell-quota
 chmod 600 /root/psm-snell-quota-backup.tgz
 systemctl start psm-snell-quota
@@ -239,7 +239,8 @@ systemctl start psm-snell-quota
 回滚停止并禁用本扩展，保留账本以便恢复：
 
 ```bash
-systemctl disable --now psm-snell-quota
+psm-snell quiesce
+systemctl disable psm-snell-quota
 ```
 
 受管实例随控制器停止。确认所有实例都已停，再逐个删除本扩展的表，例如 `nft delete table inet psmq_alice`；不要删除其他表。原 PSM 节点使用自己的端口可继续工作。应用过入口补丁的，可在同一源码版本用 `git apply -R psm-entry.patch` 撤销。不要直接运行 PSM 的全量 Snell 卸载来清理本扩展；该上游操作可能移除你仍在使用的原节点。

@@ -52,6 +52,9 @@ systemctl is-active --quiet psmq-snell@smoke_b
 psm-snell update smoke_a --quota 3M --warn 80
 sleep 2
 systemctl is-active --quiet psmq-snell@smoke_a
+psm-snell restart
+sleep 2
+systemctl is-active --quiet psmq-snell@smoke_a psmq-snell@smoke_b
 systemctl restart psm-snell-quota
 sleep 2
 systemctl is-active --quiet psmq-snell@smoke_a psmq-snell@smoke_b

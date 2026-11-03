@@ -179,6 +179,12 @@ def stop_all(users):
         run('systemctl', 'stop', *[f'psmq-snell@{u["name"]}.service' for u in users], check=False)
 
 
+def start_controller():
+    # Intentional maintenance must not consume the crash-loop restart allowance.
+    run('systemctl', 'reset-failed', UNIT, check=False)
+    run('systemctl', 'start', UNIT)
+
+
 def event(db, key, message):
     if any(e['key'] == key for e in db['events']):
         return
@@ -425,10 +431,8 @@ def mutate(args):
                 event(db, 'telegram-test:' + str(int(time.time())), 'TEST Snell quota notifications configured')
                 atomic(STATE / 'ledger.json', db)
     finally:
-        # Intentional CLI edits may restart the controller several times quickly.
-        # Reset only here; automatic crash restarts retain systemd's rate limit.
-        run('systemctl', 'reset-failed', UNIT, check=False)
-        run('systemctl', 'start', UNIT)
+        # Automatic crash restarts still retain systemd's normal rate limit.
+        start_controller()
 
 
 def main():
@@ -458,6 +462,7 @@ def main():
     export.add_argument('--server', required=True)
     sub.add_parser('daemon')
     sub.add_parser('quiesce', help='drain and stop the controller before maintenance')
+    sub.add_parser('restart', help='settle usage and restart all managed instances')
     a = p.parse_args()
     if os.geteuid() != 0:
         p.error('run as root')
@@ -470,6 +475,10 @@ def main():
             daemon()
     elif a.command == 'quiesce':
         stop_controller()
+    elif a.command == 'restart':
+        with locked('admin.lock'):
+            stop_controller()
+            start_controller()
     elif a.command == 'export':
         u = next(u for u in read(ROOT / 'users.json')['users'] if u['name'] == a.name)
         if not re.fullmatch(r'[A-Za-z0-9.:[\]-]+', a.server):

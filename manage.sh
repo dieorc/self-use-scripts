@@ -47,7 +47,7 @@ MENU
             ;;
         8) psm-snell telegram || true ;;
         9) journalctl -u psm-snell-quota -n 40 --no-pager || true ;;
-        10) systemctl restart psm-snell-quota || true ;;
+        10) psm-snell restart || true ;;
         0) exit 0 ;;
         *) echo '请输入菜单中的编号' ;;
     esac

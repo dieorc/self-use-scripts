@@ -25,11 +25,15 @@ LEASE = 256 * 1024**2
 UTC = dt.timezone.utc
 
 
+class CommandError(RuntimeError):
+    """Safe diagnostic: executable/operation/exit code, never command input."""
+
+
 def run(*args, input=None, check=True):
     p = subprocess.run(args, input=input, text=True, capture_output=True, timeout=30)
     if check and p.returncode:
         # Never include command input (may contain PSKs) or external error bodies.
-        raise RuntimeError('command failed: ' + ' '.join(args[:3]))
+        raise CommandError('command failed: ' + ' '.join(args[:3]) + f' (exit {p.returncode})')
     return p
 
 
@@ -464,7 +468,8 @@ if __name__ == '__main__':
         main()
     except Exception as exc:
         # Exception messages from network libraries can contain credentials.
-        print('Failed: ' + type(exc).__name__ + '; check configuration, ledger and service journal.', file=sys.stderr)
+        detail = ': ' + str(exc) if isinstance(exc, CommandError) else ''
+        print('Failed: ' + type(exc).__name__ + detail + '; check configuration, ledger and service journal.', file=sys.stderr)
         if len(sys.argv) > 1 and sys.argv[1] == 'daemon':
             emergency('ANOMALY controller startup/runtime failed: ' + type(exc).__name__)
         sys.exit(1)
